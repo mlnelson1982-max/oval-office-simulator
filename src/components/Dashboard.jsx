@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
+import AvatarSvg from './AvatarSvg';
 import { DollarSign, Shield, Users, TrendingUp, ChevronRight, Activity, Globe, Landmark, TrendingDown } from 'lucide-react';
 
 const PRESIDENT_METADATA = {
-  sterling: { name: 'Dr. Clara Sterling', title: 'The Progressive Academic', avatar: '/avatar_sterling.png' },
-  vance: { name: 'Gen. Marcus Vance', title: 'The Decorated Veteran', avatar: '/avatar_vance.png' },
-  cross: { name: 'Aiden Cross', title: 'The Silicon Valley Maverick', avatar: '/avatar_cross.png' }
+  sterling: { name: 'Dr. Clara Sterling', title: 'The Progressive Academic' },
+  vance: { name: 'Gen. Marcus Vance', title: 'The Decorated Veteran' },
+  cross: { name: 'Aiden Cross', title: 'The Silicon Valley Maverick' }
 };
 
 export default function Dashboard({
   selectedPresident,
+  presidentName,
+  customAvatar,
   turn,
   politicalCapital,
   gdpGrowth,
@@ -32,9 +35,10 @@ export default function Dashboard({
 
   const dossier = PRESIDENT_METADATA[selectedPresident] || {
     name: 'President of the United States',
-    title: 'Executive Commander-in-Chief',
-    avatar: '/avatar_sterling.png'
+    title: 'Executive Commander-in-Chief'
   };
+
+  const displayName = presidentName || dossier.name;
 
   const getQuarterText = (t) => {
     const year = Math.ceil(t / 4);
@@ -137,7 +141,7 @@ export default function Dashboard({
       {/* Turn Alerts Notification Banners */}
       {turnNotification && (
         <div 
-          className="glass-panel pulse-glow" 
+          className="glass-panel" 
           style={{ 
             padding: '12px 16px', 
             borderLeft: '4px solid var(--color-warning)', 
@@ -156,19 +160,11 @@ export default function Dashboard({
       {/* President Dossier Header Card */}
       <div className="glass-panel" style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <img 
-            src={dossier.avatar} 
-            alt={dossier.name} 
-            style={{ 
-              width: '44px', 
-              height: '44px', 
-              borderRadius: '8px', 
-              objectFit: 'cover', 
-              border: '1.5px solid var(--border-glass-glow)' 
-            }} 
-          />
+          <div style={{ width: '44px', height: '44px', borderRadius: '8px', overflow: 'hidden', border: '1.5px solid var(--border-glass-glow)' }}>
+            <AvatarSvg avatar={customAvatar} />
+          </div>
           <div>
-            <h4 style={{ fontSize: '0.9rem', fontWeight: 800, fontFamily: 'var(--font-display)' }}>{dossier.name}</h4>
+            <h4 style={{ fontSize: '0.9rem', fontWeight: 800, fontFamily: 'var(--font-display)' }}>{displayName}</h4>
             <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{dossier.title}</span>
           </div>
         </div>
@@ -324,7 +320,7 @@ export default function Dashboard({
       {/* Advance Turn Button */}
       <button 
         onClick={advanceTurn}
-        className="btn btn-primary pulse-glow" 
+        className="btn btn-primary" 
         style={{ padding: '16px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', width: '100%' }}
       >
         <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>End Quarter {turn}/16</span>

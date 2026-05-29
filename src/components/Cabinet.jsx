@@ -2,17 +2,17 @@ import React, { useState } from 'react';
 import { Shield, Sparkles, AlertCircle } from 'lucide-react';
 
 const POLICY_DETAILS = {
-  incomeTax: { label: 'Income Tax Rate', min: 10, max: 70, unit: '%', desc: 'Direct tax levied on citizens’ personal earnings.' },
-  corporateTax: { label: 'Corporate Tax Rate', min: 5, max: 50, unit: '%', desc: 'Tax rate imposed on business net profits.' },
-  carbonTax: { label: 'Carbon Tax Rate', min: 0, max: 50, unit: '%', desc: 'Environmental tax on carbon-producing energy sources.' },
-  militarySpending: { label: 'Military Budget', min: 10, max: 90, unit: '%', desc: 'Resource allocation for defense and strategic forces.' },
-  healthcareSpending: { label: 'Public Healthcare', min: 10, max: 80, unit: '%', desc: 'Government subsidies for public medical services.' },
-  educationSpending: { label: 'Public Education', min: 10, max: 80, unit: '%', desc: 'Funding for national schools, universities, and grants.' },
-  infrastructureSpending: { label: 'Infrastructure Dev', min: 5, max: 75, unit: '%', desc: 'Budgets for highways, transit, grids, and technology.' },
-  welfareSpending: { label: 'Social Safety Net', min: 5, max: 80, unit: '%', desc: 'Unemployment benefits, pension aid, and food stamps.' },
-  gunRegulation: { label: 'Firearms Regulation', min: 0, max: 100, unit: '%', desc: 'Background check stringency and weapon licensing.' },
-  greenSubsidies: { label: 'Clean Energy Grants', min: 0, max: 100, unit: '%', desc: 'Subsidies and tax credits for renewable energy projects.' },
-  borderControl: { label: 'Border Enforcement', min: 10, max: 95, unit: '%', desc: 'Funding for border patrols, custom centers, and fencing.' }
+  incomeTax:            { label: 'Income Tax Rate',      min: 10, max: 70, unit: '%', desc: 'Direct tax levied on citizens personal earnings.',        unlocksAt: 1  },
+  corporateTax:         { label: 'Corporate Tax Rate',   min: 5,  max: 50, unit: '%', desc: 'Tax rate imposed on business net profits.',               unlocksAt: 1  },
+  carbonTax:            { label: 'Carbon Tax Rate',      min: 0,  max: 50, unit: '%', desc: 'Environmental tax on carbon-producing energy sources.',   unlocksAt: 3  },
+  militarySpending:     { label: 'Military Budget',      min: 10, max: 90, unit: '%', desc: 'Resource allocation for defense and strategic forces.',   unlocksAt: 1  },
+  healthcareSpending:   { label: 'Public Healthcare',    min: 10, max: 80, unit: '%', desc: 'Government subsidies for public medical services.',       unlocksAt: 2  },
+  educationSpending:    { label: 'Public Education',     min: 10, max: 80, unit: '%', desc: 'Funding for national schools, universities, and grants.', unlocksAt: 2  },
+  infrastructureSpending:{ label: 'Infrastructure Dev',  min: 5,  max: 75, unit: '%', desc: 'Budgets for highways, transit, grids, and technology.',   unlocksAt: 4  },
+  welfareSpending:      { label: 'Social Safety Net',    min: 5,  max: 80, unit: '%', desc: 'Unemployment benefits, pension aid, and food stamps.',    unlocksAt: 3  },
+  gunRegulation:        { label: 'Firearms Regulation',  min: 0,  max: 100, unit:'%', desc: 'Background check stringency and weapon licensing.',       unlocksAt: 5  },
+  greenSubsidies:       { label: 'Clean Energy Grants',  min: 0,  max: 100, unit:'%', desc: 'Subsidies and tax credits for renewable energy projects.',unlocksAt: 6  },
+  borderControl:        { label: 'Border Enforcement',   min: 10, max: 95, unit: '%', desc: 'Funding for border patrols, custom centers, and fencing.',unlocksAt: 4  },
 };
 
 export default function Cabinet({
@@ -21,7 +21,8 @@ export default function Cabinet({
   proposedBill,
   proposeBillToCongress,
   setPolicies,
-  factions
+  factions,
+  turn = 1
 }) {
   const [selectedGroup, setSelectedGroup] = useState('taxes'); // 'taxes' | 'spending' | 'regulation'
   const [tempValues, setTempValues] = useState({ ...policies });
@@ -162,13 +163,36 @@ export default function Cabinet({
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {groups[selectedGroup].map(key => {
           const info = POLICY_DETAILS[key];
+          const isLocked = turn < (info.unlocksAt || 1);
           const curVal = policies[key];
           const tempVal = tempValues[key];
           const diff = tempVal - curVal;
           const impacts = getPolicyImpactPreview(key, tempVal);
 
           return (
-            <div key={key} className="glass-panel" style={{ padding: '16px' }}>
+            <div key={key} className={`glass-panel ${isLocked ? '' : ''}`}
+              style={{ padding: '16px', position: 'relative', opacity: isLocked ? 0.6 : 1, overflow: 'hidden' }}>
+
+              {/* LOCKED OVERLAY */}
+              {isLocked && (
+                <div style={{
+                  position: 'absolute', inset: 0, zIndex: 5,
+                  background: 'rgba(6,10,24,0.7)',
+                  backdropFilter: 'blur(2px)',
+                  display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center',
+                  gap: '6px', borderRadius: '14px',
+                }}>
+                  <Shield size={20} style={{ color: 'var(--color-warning)', opacity: 0.8 }} />
+                  <span style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: 'var(--color-warning)', letterSpacing: '0.1em' }}>
+                    CLASSIFIED  --  UNLOCKS TURN {info.unlocksAt}
+                  </span>
+                  <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
+                    {info.unlocksAt - turn} quarter{info.unlocksAt - turn !== 1 ? 's' : ''} remaining
+                  </span>
+                </div>
+              )}
+
               <div className="policy-header">
                 <div>
                   <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{info.label}</span>
@@ -187,13 +211,13 @@ export default function Cabinet({
               </div>
 
               <div className="slider-container" style={{ margin: '14px 0 10px 0' }}>
-                <input 
+                <input
                   type="range"
                   min={info.min}
                   max={info.max}
                   value={tempVal}
                   onChange={(e) => handleSliderChange(key, e.target.value)}
-                  disabled={!!proposedBill}
+                  disabled={!!proposedBill || isLocked}
                   className="policy-slider"
                 />
               </div>

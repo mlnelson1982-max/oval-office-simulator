@@ -190,7 +190,7 @@ export default function Congress({
           <button
             onClick={handleCallVote}
             disabled={voteAnimation}
-            className="btn btn-primary pulse-glow"
+            className="btn btn-primary"
             style={{ width: '100%', padding: '14px', borderRadius: '12px' }}
           >
             {voteAnimation ? (

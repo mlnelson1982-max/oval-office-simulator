@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useGameState } from './hooks/useGameState';
 import CharacterSelection from './components/CharacterSelection';
+import CharacterCreator from './components/CharacterCreator';
 import CabinetSelection from './components/CabinetSelection';
 import Dashboard from './components/Dashboard';
 import Cabinet from './components/Cabinet';
@@ -10,10 +11,13 @@ import Factions from './components/Factions';
 import EventModal from './components/EventModal';
 import ElectionSummary from './components/ElectionSummary';
 import { Activity, Sliders, Landmark, Users, Flag, Shield } from 'lucide-react';
+import WelcomeScreen from './components/WelcomeScreen';
 
 export default function App() {
   const {
     selectedPresident,
+    presidentName,
+    customAvatar,
     treasurySec,
     stateSec,
     defenseSec,
@@ -47,6 +51,7 @@ export default function App() {
     warProgress,
     turnNotification,
     selectPresident,
+    setCustomAvatar,
     appointCabinet,
     proposeBillToCongress,
     lobbyParty,
@@ -60,7 +65,15 @@ export default function App() {
     setPolicies
   } = useGameState();
 
+  const [welcomeSeen, setWelcomeSeen] = useState(false);
+  const [avatarCustomized, setAvatarCustomized] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'cabinet' | 'congress' | 'warRoom' | 'factions'
+
+  const handleReset = () => {
+    setWelcomeSeen(false);
+    setAvatarCustomized(false);
+    resetGame();
+  };
 
   // Tab content switching
   const renderTabContent = () => {
@@ -69,6 +82,8 @@ export default function App() {
         return (
           <Dashboard
             selectedPresident={selectedPresident}
+            presidentName={presidentName}
+            customAvatar={customAvatar}
             turn={turn}
             politicalCapital={politicalCapital}
             gdpGrowth={gdpGrowth}
@@ -137,7 +152,12 @@ export default function App() {
     }
   };
 
-  // Step 1: Onboarding President Picker
+  // Step 0: Welcome Screen
+  if (!welcomeSeen) {
+    return <WelcomeScreen onStart={() => setWelcomeSeen(true)} />;
+  }
+
+  // Step 1: Onboarding President Template Profile Picker
   if (!selectedPresident) {
     return (
       <div className="mobile-app-container" style={{ justifyContent: 'center', padding: '16px' }}>
@@ -146,7 +166,21 @@ export default function App() {
     );
   }
 
-  // Step 2: Onboarding Cabinet Picker
+  // Step 2: Onboarding Character Looks Creator
+  if (!avatarCustomized) {
+    return (
+      <div className="mobile-app-container" style={{ justifyContent: 'center', padding: '16px' }}>
+        <CharacterCreator 
+          onSave={(selections) => {
+            setCustomAvatar(selections);
+            setAvatarCustomized(true);
+          }} 
+        />
+      </div>
+    );
+  }
+
+  // Step 3: Onboarding Cabinet Advisors Appointer
   if (!treasurySec || !stateSec || !defenseSec) {
     return (
       <div className="mobile-app-container" style={{ justifyContent: 'center', padding: '16px' }}>
@@ -163,8 +197,8 @@ export default function App() {
           <Flag size={20} style={{ color: 'var(--color-primary)' }} />
           <span>Oval Office Simulator</span>
         </h1>
-        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-          Term: {Math.ceil(turn / 4)}/4
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)', padding: '4px 10px', borderRadius: '6px' }}>
+          Term {Math.ceil(turn / 4)}/4
         </div>
       </header>
 
@@ -222,7 +256,7 @@ export default function App() {
       <ElectionSummary
         gameOver={gameOver}
         electionResults={electionResults}
-        resetGame={resetGame}
+        resetGame={handleReset}
         approval={approval}
         debt={debt}
         gdp={gdp}

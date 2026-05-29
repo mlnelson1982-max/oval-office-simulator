@@ -1,6 +1,33 @@
 import React, { useState } from 'react';
 import InteractiveGlobe from './InteractiveGlobe';
-import { Shield, ShieldAlert, Cpu, Globe, Crosshair, HelpCircle, Activity, Heart, Swords, Landmark, Ban } from 'lucide-react';
+import { Shield, ShieldAlert, Cpu, Globe, Crosshair, HelpCircle, Activity, Heart, Swords, Landmark, Ban, Eye, Lock, Radio, AlertTriangle } from 'lucide-react';
+
+// CIA intelligence report generator
+const generateIntelReport = (country) => {
+  const militaryReadings = [
+    `SIGINT detects ${country.name} mobilizing ${Math.floor(Math.random()*120)+20}K ground troops along northern border.`,
+    `Satellite imagery confirms ${country.name} expanding missile launch sites (+${Math.floor(Math.random()*3)+1} facilities).`,
+    `HUMINT source reports ${country.name} military readiness is at ${Math.floor(Math.random()*40)+40}% operational capacity.`,
+    `${country.name} has recently acquired ${['T-90 tanks', 'Su-35 fighters', 'S-400 systems', 'ballistic missile components'][Math.floor(Math.random()*4)]}.`,
+  ];
+  const diplomaticReadings = [
+    `${country.name} is secretly negotiating with ${['Russia', 'China', 'Iran', 'North Korea', 'the EU'][Math.floor(Math.random()*5)]}.`,
+    `Intelligence confirms ${country.name} is planning to ${['shift alliance', 'impose sanctions on US interests', 'sign a mutual defense pact', 'request UN intervention'][Math.floor(Math.random()*4)]}.`,
+    `${country.name}'s leadership approval is at ${Math.floor(Math.random()*40)+30}%, suggesting internal pressure.`,
+    `Covert financial flows show ${country.name} is funding opposition groups in ${['Pakistan', 'Venezuela', 'Myanmar', 'Syria'][Math.floor(Math.random()*4)]}.`,
+  ];
+  const threatReadings = [
+    `${country.name} cyberattack unit has probed ${Math.floor(Math.random()*5)+2} US infrastructure targets this quarter.`,
+    `CIA asset confirms ${country.name} is ${Math.random()>0.5 ? '' : 'not '}aware of US military positioning in the region.`,
+    `${country.name}'s WMD program is ${['suspended', 'ongoing', 'accelerating', 'unknown'][Math.floor(Math.random()*4)]}.`,
+    `Risk assessment: ${country.name} aggression probability in next turn is ${Math.floor(Math.random()*60)+10}%.`,
+  ];
+  return [
+    { type: 'MILITARY', icon: '⚔️', text: militaryReadings[Math.floor(Math.random()*militaryReadings.length)] },
+    { type: 'DIPLOMATIC', icon: '🤝', text: diplomaticReadings[Math.floor(Math.random()*diplomaticReadings.length)] },
+    { type: 'THREAT', icon: '⚠️', text: threatReadings[Math.floor(Math.random()*threatReadings.length)] },
+  ];
+};
 
 const DEFCON_STATES = {
   5: { name: 'DEFCON 5 - NORMAL', desc: 'Peacetime readiness. Security operations are standard.', color: 'var(--color-info)' },
@@ -27,6 +54,9 @@ export default function WarRoom({
   const [selectedCountry, setSelectedCountry] = useState(countries[0]);
   const [actionLog, setActionLog] = useState('');
   const [logColor, setLogColor] = useState('var(--text-muted)');
+  const [intelReport, setIntelReport] = useState(null);
+  const [intelCountry, setIntelCountry] = useState(null);
+  const [intelRunning, setIntelRunning] = useState(false);
 
   const activeDefcon = DEFCON_STATES[defcon] || DEFCON_STATES[5];
 
@@ -40,6 +70,20 @@ export default function WarRoom({
         setLogColor('var(--color-success)');
       }
     }
+  };
+
+  const handleIntelOp = () => {
+    if (!selectedCountry || politicalCapital < 15) return;
+    setIntelRunning(true);
+    setIntelReport(null);
+    // Simulate "hacking in" delay
+    setTimeout(() => {
+      setIntelReport(generateIntelReport(selectedCountry));
+      setIntelCountry(selectedCountry.name);
+      setIntelRunning(false);
+      setActionLog(`CIA INTEL OP COMPLETE: ${selectedCountry.name} dossier retrieved. -15 PC.`);
+      setLogColor('var(--color-info)');
+    }, 1800);
   };
 
   const handleDiplomaticAction = (actionId) => {
@@ -62,8 +106,7 @@ export default function WarRoom({
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
       {/* DEFCON Status Box */}
-      <div 
-        className="glass-panel pulse-glow" 
+      <div className="glass-panel" 
         style={{ 
           padding: '16px', 
           textAlign: 'center', 
@@ -140,6 +183,71 @@ export default function WarRoom({
           <span style={{ color: logColor }}>{actionLog}</span>
         </div>
       )}
+
+      {/* CIA INTELLIGENCE PANEL */}
+      <div className="glass-panel" style={{ padding: '16px', border: '1px solid rgba(14,165,233,0.2)', background: 'rgba(14,165,233,0.03)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <span className="status-label" style={{ color: 'var(--color-info)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.65rem' }}>
+            <Eye size={12} /> COVERT INTELLIGENCE DIVISION
+          </span>
+          <span style={{ fontSize: '0.55rem', fontFamily: 'monospace', color: 'rgba(14,165,233,0.5)', letterSpacing: '0.08em' }}>
+            TS/SCI CLEARANCE
+          </span>
+        </div>
+
+        {/* Run intel button */}
+        <button
+          onClick={handleIntelOp}
+          disabled={politicalCapital < 15 || intelRunning || !selectedCountry}
+          className="btn btn-secondary"
+          style={{
+            width: '100%', padding: '12px', marginBottom: '12px',
+            border: '1px solid rgba(14,165,233,0.25)',
+            color: politicalCapital >= 15 ? 'var(--color-info)' : 'var(--text-muted)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            fontSize: '0.8rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {intelRunning
+              ? <Radio size={14} style={{ animation: 'spin 1s linear infinite' }} />
+              : <Eye size={14} />}
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontWeight: 700 }}>{intelRunning ? 'OPERATION IN PROGRESS...' : `Run Intel Op: ${selectedCountry?.name || 'Select target'}`}</div>
+              <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Reveals military, diplomatic & threat data</div>
+            </div>
+          </div>
+          <span style={{ fontWeight: 700, fontSize: '0.75rem' }}>-15 PC</span>
+        </button>
+
+        {/* Intel results */}
+        {intelReport && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ fontSize: '0.6rem', fontFamily: 'monospace', color: 'rgba(14,165,233,0.6)', letterSpacing: '0.1em', marginBottom: '2px' }}>
+              // CLASSIFIED REPORT  --  {intelCountry?.toUpperCase()}  --  {new Date().toISOString().split('T')[0]}
+            </div>
+            {intelReport.map((item, i) => (
+              <div key={i} style={{
+                background: 'rgba(0,0,0,0.2)',
+                border: '1px solid rgba(14,165,233,0.12)',
+                borderRadius: '6px',
+                padding: '10px 12px',
+                fontSize: '0.72rem',
+                lineHeight: 1.5,
+                animation: `fadeInUp 0.3s ease ${i * 0.15}s both`,
+              }}>
+                <div style={{ fontSize: '0.55rem', fontFamily: 'monospace', color: 'rgba(14,165,233,0.6)', letterSpacing: '0.12em', marginBottom: '4px' }}>
+                  {item.icon} [{item.type}]
+                </div>
+                <div style={{ color: 'var(--text-muted)' }}>{item.text}</div>
+              </div>
+            ))}
+            <div style={{ fontSize: '0.55rem', fontFamily: 'monospace', color: 'rgba(100,116,139,0.5)', marginTop: '4px' }}>
+              INTEL EXPIRES END OF CURRENT QUARTER // BURN AFTER READING
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Selected Country Diplomatic Dossier */}
       {selectedCountry && (
@@ -320,7 +428,7 @@ export default function WarRoom({
               </p>
               <button
                 onClick={declareWar}
-                className="btn pulse-glow"
+                className="btn"
                 style={{ width: '100%', background: 'var(--color-danger)', color: 'white', fontWeight: 700, display: 'flex', gap: '8px', padding: '12px' }}
               >
                 <Swords size={16} /> FORMALLY DECLARE WAR

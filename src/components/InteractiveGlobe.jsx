@@ -65,8 +65,8 @@ export default function InteractiveGlobe({ countries, selectedCountry, onSelectC
 
       // Draw background atmospheric glow
       const glowGrad = ctx.createRadialGradient(centerX, centerY, GLOBE_RADIUS - 10, centerX, centerY, GLOBE_RADIUS + 15);
-      glowGrad.addColorStop(0, 'rgba(99, 102, 241, 0.03)');
-      glowGrad.addColorStop(0.5, 'rgba(99, 102, 241, 0.08)');
+      glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.01)');
+      glowGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.03)');
       glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = glowGrad;
       ctx.beginPath();
@@ -74,14 +74,14 @@ export default function InteractiveGlobe({ countries, selectedCountry, onSelectC
       ctx.fill();
 
       // Draw Sphere Backdrop outline
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.arc(centerX, centerY, GLOBE_RADIUS, 0, Math.PI * 2);
       ctx.stroke();
 
       // Render Parallels (latitude rings)
-      ctx.strokeStyle = 'rgba(99, 102, 241, 0.12)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
       ctx.lineWidth = 0.5;
       const parallelSteps = [-60, -30, 0, 30, 60];
       parallelSteps.forEach(lat => {
@@ -132,6 +132,7 @@ export default function InteractiveGlobe({ countries, selectedCountry, onSelectC
             drawing = false;
           }
         }
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
         ctx.stroke();
       });
 

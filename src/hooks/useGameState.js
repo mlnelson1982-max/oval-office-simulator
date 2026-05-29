@@ -172,8 +172,18 @@ const CRISES_EVENTS = [
 ];
 
 export function useGameState() {
-  // App initialization states
+  // Onboarding parameters
   const [selectedPresident, setSelectedPresident] = useState(null);
+  const [presidentName, setPresidentName] = useState('');
+  const [customAvatar, setCustomAvatar] = useState({
+    skin: 'peach',
+    hair: 'crop',
+    color: 'black',
+    attire: 'suit',
+    accessory: 'none',
+    background: 'ovalOffice'
+  });
+
   const [treasurySec, setTreasurySec] = useState(null);
   const [stateSec, setStateSec] = useState(null);
   const [defenseSec, setDefenseSec] = useState(null);
@@ -237,7 +247,8 @@ export function useGameState() {
   }, [warEscalation]);
 
   // Select President dossier picker
-  const selectPresident = (characterId) => {
+  const selectPresident = (name, avatarPath, characterId) => {
+    setPresidentName(name);
     setSelectedPresident(characterId);
   };
 
@@ -278,7 +289,7 @@ export function useGameState() {
     }
 
     if (defenseId === 'arthur') {
-      startReadiness = 75; // starts higher
+      startReadiness = 75;
     }
 
     setWelfare(startWelfare);
@@ -287,12 +298,10 @@ export function useGameState() {
     setPolicies(startPolicies);
     setMilitaryReadiness(startReadiness);
 
-    // Apply faction modifications
     setFactions(prevFactions => {
       return prevFactions.map(f => {
         let loyalty = f.loyalty;
         
-        // President
         if (selectedPresident === 'sterling') {
           if (f.id === 'socialists') loyalty += 15;
           if (f.id === 'liberals') loyalty += 10;
@@ -308,7 +317,6 @@ export function useGameState() {
           if (f.id === 'workingclass') loyalty -= 10;
         }
 
-        // Cabinet
         if (treasuryId === 'rodriguez') {
           if (f.id === 'workingclass') loyalty += 10;
         }
@@ -327,7 +335,6 @@ export function useGameState() {
       (policies.corporateTax * 0.04) + 
       (policies.carbonTax * 0.015)
     );
-    // Treasury multiplier
     const revenueFactor = treasurySec === 'olivia' ? 1.05 : 1.0;
     const newRevenue = Number((1.5 + taxRevenue * revenueFactor).toFixed(2));
 
@@ -347,11 +354,7 @@ export function useGameState() {
     if (defcon === 1) defconAlertFee = 0.60;
 
     const characterDefenseCharge = selectedPresident === 'vance' ? 0.05 : 0;
-    
-    // War tax overhead: war costs $0.8T per turn
     const activeWarCharge = isAtWar ? 0.80 : 0;
-
-    // Cabinet Rodriguez spending overhead
     const rodriguezOverhead = treasurySec === 'rodriguez' ? 0.15 : 0;
 
     const newSpending = Number((1.8 + serviceSpending + warOperationsSpending + defconAlertFee + characterDefenseCharge + activeWarCharge + rodriguezOverhead).toFixed(2));
@@ -413,8 +416,6 @@ export function useGameState() {
     baseRepVotes = Math.max(5, Math.min(95, baseRepVotes + approvalBonus));
     baseIndVotes = Math.max(5, Math.min(95, baseIndVotes + approvalBonus));
 
-    // Custom Congress control modifications based on mid-term seat ratios
-    // If Democrats own more seats, Dem votes are amplified, Rep votes muted.
     const demWeight = (congress.democrats - 48) * 0.8;
     const repWeight = (congress.republicans - 47) * 0.8;
 
@@ -498,9 +499,9 @@ export function useGameState() {
               break;
             case 'healthcareSpending':
               if (f.id === 'workingclass') loyaltyChange = magnitude * 1.2;
-              if (f.id === 'socialists') loyaltyChange = magnitude * 1.0;
-              if (f.id === 'liberals') loyaltyChange = magnitude * 0.8;
-              if (f.id === 'capitalists') loyaltyChange = magnitude * -0.6;
+              if (f.id === 'socialists') loyaltyChange = loyaltyChange = magnitude * 1.0;
+              if (f.id === 'liberals') loyaltyChange = loyaltyChange = magnitude * 0.8;
+              if (f.id === 'capitalists') loyaltyChange = loyaltyChange = magnitude * -0.6;
               break;
             case 'educationSpending':
               if (f.id === 'liberals') loyaltyChange = magnitude * 1.2;
@@ -560,7 +561,6 @@ export function useGameState() {
       if (proposedBill.policyKey === 'infrastructureSpending') gdpMod += magnitude * 0.06;
       setGdpGrowth(prev => Number((prev + gdpMod).toFixed(2)));
 
-      // Corporate tax changes impact stock market instantly
       if (proposedBill.policyKey === 'corporateTax') {
         setMarketIndex(prev => Math.max(1000, Math.round(prev * (1 - magnitude * 0.05))));
       }
@@ -573,7 +573,7 @@ export function useGameState() {
     return { passed, message, totalYes, totalNo };
   };
 
-  // Diplomatic Interactions (Globe clicks)
+  // Diplomatic Interactions
   const interactWithCountry = (countryId, actionId) => {
     let costPC = 15;
     const isThomas = stateSec === 'thomas';
@@ -601,21 +601,20 @@ export function useGameState() {
             feedback = `Drafted a bilateral trade agreement with ${c.name}. relations +15, GDP growth +0.35%.`;
           } else if (actionId === 'aid') {
             nextRelation = Math.min(100, nextRelation + 20);
-            setDebt(prev => prev + 0.08); // Costs $80B
+            setDebt(prev => prev + 0.08);
             setSecurity(prev => Math.min(100, prev + 5));
             feedback = `Dispatched $80B in defense support to ${c.name}. Relations +20, debt increased.`;
           } else if (actionId === 'threaten') {
             nextRelation = Math.max(0, nextRelation - 25);
             setRivalAggression(prev => Math.min(100, prev + 15));
             setWarEscalation(prev => Math.min(100, prev + 12));
-            setPoliticalCapital(prev => Math.min(100, prev + 10)); // Hawk bonus
+            setPoliticalCapital(prev => Math.min(100, prev + 10));
             feedback = `Issued formal diplomatic ultimatum to ${c.name}. Relations tanked, Aggression & Escalation rose.`;
           } else if (actionId === 'lobby') {
             nextRelation = Math.min(100, nextRelation + 8);
             feedback = `Lobbied diplomatic committees in ${c.name}. Relations +8.`;
           }
 
-          // Recalculate status
           if (nextRelation >= 80) nextStatus = 'allied';
           else if (nextRelation >= 60) nextStatus = 'friendly';
           else if (nextRelation >= 40) nextStatus = 'neutral';
@@ -703,7 +702,7 @@ export function useGameState() {
     return false;
   };
 
-  // Geopolitical War Mode actions
+  // Declare War
   const declareWar = () => {
     if (isAtWar) return;
     setIsAtWar(true);
@@ -787,43 +786,30 @@ export function useGameState() {
     else setGameOver('re-election-lost');
   };
 
-  // Mid-term Congress election mechanics
   const runMidtermElections = () => {
     let demShift = 0;
     let repShift = 0;
 
-    // Shift based on approval ratings
     if (approval >= 58) {
-      demShift += 4;
-      repShift -= 4;
+      demShift += 4; repShift -= 4;
     } else if (approval <= 43) {
-      demShift -= 6;
-      repShift += 6;
+      demShift -= 6; repShift += 6;
     } else {
-      demShift -= 2;
-      repShift += 2;
+      demShift -= 2; repShift += 2;
     }
 
-    // Shift based on GDP economy health
     if (gdpGrowth >= 3.2) {
-      demShift += 2;
-      repShift -= 2;
+      demShift += 2; repShift -= 2;
     } else if (gdpGrowth <= 1.0) {
-      demShift -= 3;
-      repShift += 3;
+      demShift -= 3; repShift += 3;
     }
 
     const newDems = Math.max(30, Math.min(70, congress.democrats + demShift));
     const newReps = Math.max(30, Math.min(70, congress.republicans + repShift));
     const newInds = 100 - newDems - newReps;
 
-    setCongress({
-      democrats: newDems,
-      republicans: newReps,
-      independents: newInds
-    });
+    setCongress({ democrats: newDems, republicans: newReps, independents: newInds });
 
-    // Notify user
     const text = newDems >= 50 
       ? `Mid-term Elections: The Presidential coalition maintains control of the Senate (${newDems}-${newReps})!`
       : `Mid-term Elections: The opposition party secures a Senate majority (${newReps}-${newDems})! Passing bills will be more challenging.`;
@@ -832,7 +818,6 @@ export function useGameState() {
   };
 
   const advanceTurn = () => {
-    // 1. Verify Lose conditions
     const debtToGdpRatio = (debt / gdp) * 100;
     if (debtToGdpRatio > 250) {
       setGameOver('bankruptcy');
@@ -860,7 +845,6 @@ export function useGameState() {
       return;
     }
 
-    // End of Term
     if (turn === 16) {
       simulateElection();
       return;
@@ -868,16 +852,14 @@ export function useGameState() {
 
     const nextTurn = turn + 1;
     setTurn(nextTurn);
-    setTurnNotification(null); // Clear alerts
+    setTurnNotification(null);
 
-    // Trigger Mid-term elections at Turn 8 (end of Year 2)
     if (nextTurn === 9) {
       runMidtermElections();
     }
 
     setWarOperationsSpending(0);
 
-    // 2. Adjust Economy growth effects on Debt / GDP
     const interestRate = treasurySec === 'olivia' ? 0.02 : 0.025;
     const interestCost = debt * interestRate;
     const currentDeficit = spending - revenue;
@@ -889,23 +871,19 @@ export function useGameState() {
     if (defcon === 2) escDrift += 1;
     if (defcon === 1) escDrift += 3;
 
-    // State Thomas Dove perk: war escalation drifts down
     if (stateSec === 'thomas') escDrift -= 2;
     
     const finalEscalation = Math.max(0, Math.min(100, Math.round(warEscalation + escDrift)));
     setWarEscalation(finalEscalation);
 
-    // Active War Ticker
     let nextWarProgress = warProgress;
     let nextIsAtWar = isAtWar;
     if (isAtWar) {
-      // War progress updates based on readiness vs aggressor aggression
       const diff = militaryReadiness - rivalAggression;
       const progressDelta = Math.max(2, Math.round(diff / 2 + 6));
       nextWarProgress = Math.min(100, warProgress + progressDelta);
       setWarProgress(nextWarProgress);
 
-      // Decrement readiness during active combat
       setMilitaryReadiness(prev => Math.max(0, prev - 10));
 
       if (nextWarProgress >= 100) {
@@ -923,7 +901,6 @@ export function useGameState() {
       }
     }
 
-    // GDP growth drags
     let tensionGdpDrag = 0;
     if (defcon === 2) tensionGdpDrag = -0.4;
     if (defcon === 1) tensionGdpDrag = -0.9;
@@ -935,7 +912,6 @@ export function useGameState() {
     setDebt(newDebt);
     setGdp(newGdp);
 
-    // 3. Stock Market calculations
     const gdpFactor = finalGdpGrowth * 185;
     const taxFactor = - (policies.corporateTax - 21) * 35;
     const deficitFactor = - currentDeficit * 120;
@@ -949,7 +925,6 @@ export function useGameState() {
     setMarketIndex(finalMarket);
     setMarketChange(marketDelta);
 
-    // Handle Market Crash/Bull events
     if (finalMarket < 5500 && marketIndex >= 5500) {
       setTurnNotification('Wall Street Alert: The stock market has crashed! Public panic spreads.');
       setFactions(fList => fList.map(f => ({ ...f, loyalty: Math.max(5, f.loyalty - 15) })));
@@ -961,10 +936,8 @@ export function useGameState() {
       }));
     }
 
-    // 4. Regain a baseline of Political Capital
     setPoliticalCapital(prev => Math.min(100, prev + 12 + Math.round(approval * 0.15)));
 
-    // 5. Save history snapshot
     const snapshot = {
       turn: nextTurn,
       debt: newDebt,
@@ -978,7 +951,6 @@ export function useGameState() {
     };
     setHistory(prev => [...prev, snapshot]);
 
-    // 6. Run crisis selection checks
     if (!nextIsAtWar) {
       checkForCrises(nextTurn);
     }
@@ -986,6 +958,15 @@ export function useGameState() {
 
   const resetGame = () => {
     setSelectedPresident(null);
+    setPresidentName('');
+    setCustomAvatar({
+      skin: 'peach',
+      hair: 'crop',
+      color: 'black',
+      attire: 'suit',
+      accessory: 'none',
+      background: 'ovalOffice'
+    });
     setTreasurySec(null);
     setStateSec(null);
     setDefenseSec(null);
@@ -1019,6 +1000,8 @@ export function useGameState() {
 
   return {
     selectedPresident,
+    presidentName,
+    customAvatar,
     treasurySec,
     stateSec,
     defenseSec,
@@ -1052,6 +1035,7 @@ export function useGameState() {
     warProgress,
     turnNotification,
     selectPresident,
+    setCustomAvatar,
     appointCabinet,
     proposeBillToCongress,
     lobbyParty,
