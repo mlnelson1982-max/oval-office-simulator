@@ -168,6 +168,19 @@ body::after {
   50%       { opacity: 0.6; }
 }
 
+@keyframes pulse-glow-gold {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.2), 0 4px 24px rgba(0, 0, 0, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(212, 175, 55, 0.55), 0 4px 24px rgba(0, 0, 0, 0.35);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow-gold 3s ease-in-out infinite;
+}
+
 .anim-fade-in { animation: fadeInUp 0.4s ease both; }
 .pulse-danger { animation: pulse-danger 2.5s ease-in-out infinite; }
 .pulse-warning { animation: pulse-warning 2.5s ease-in-out infinite; }

@@ -130,7 +130,7 @@ export default function CabinetSelection({ appointCabinet }) {
                     padding: '14px 12px',
                     cursor: 'pointer',
                     border: active ? '1px solid var(--color-primary)' : '1px solid var(--border-glass)',
-                    background: active ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+                    background: active ? 'rgba(212, 175, 55, 0.12)' : 'transparent',
                     transition: 'all var(--transition-fast)'
                   }}
                 >
@@ -160,7 +160,7 @@ export default function CabinetSelection({ appointCabinet }) {
                     padding: '14px 12px',
                     cursor: 'pointer',
                     border: active ? '1px solid var(--color-primary)' : '1px solid var(--border-glass)',
-                    background: active ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+                    background: active ? 'rgba(212, 175, 55, 0.12)' : 'transparent',
                     transition: 'all var(--transition-fast)'
                   }}
                 >
@@ -190,7 +190,7 @@ export default function CabinetSelection({ appointCabinet }) {
                     padding: '14px 12px',
                     cursor: 'pointer',
                     border: active ? '1px solid var(--color-primary)' : '1px solid var(--border-glass)',
-                    background: active ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+                    background: active ? 'rgba(212, 175, 55, 0.12)' : 'transparent',
                     transition: 'all var(--transition-fast)'
                   }}
                 >

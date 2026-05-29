@@ -136,7 +136,7 @@ export default function Dashboard({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div className="anim-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       
       {/* Turn Alerts Notification Banners */}
       {turnNotification && (
@@ -199,40 +199,65 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* Main Approval Panel */}
-      <div className="glass-panel" style={{ padding: '20px', textAlign: 'center' }}>
-        <span className="status-label">Administration Approval</span>
-        <div style={{ fontSize: '3rem', fontWeight: 800, fontFamily: 'var(--font-display)', color: approval >= 50 ? 'var(--color-success)' : 'var(--color-danger)' }}>
-          {approval}%
-        </div>
-        
-        <div className="progress-bar-container" style={{ margin: '12px 0 6px 0' }}>
-          <div 
-            className={`progress-bar-fill ${approval >= 60 ? 'fill-success' : approval <= 40 ? 'fill-danger' : 'fill-primary'}`} 
-            style={{ width: `${approval}%` }}
-          />
-        </div>
-        
-        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          {approval >= 65 ? 'High approval grants a bonus to political capital and Congress support' : approval <= 35 ? 'Dangerously low! Risk of impeachment or civil unrest.' : 'Public sentiment is stable.'}
-        </span>
-      </div>
+      {/* Main Approval Panel — Circular Ring Gauge */}
+      {(() => {
+        const r = 52;
+        const circ = 2 * Math.PI * r;
+        const offset = circ - (approval / 100) * circ;
+        const approvalColor = approval >= 60 ? 'var(--color-success)' : approval <= 35 ? 'var(--color-danger)' : 'var(--color-warning)';
+        const glowClass = approval >= 60 ? 'panel-glow-success' : approval <= 35 ? 'panel-glow-danger pulse-danger' : 'panel-glow-warning';
+        return (
+          <div className={`glass-panel ${glowClass}`} style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div style={{ flexShrink: 0, position: 'relative', width: 120, height: 120 }}>
+              <svg width="120" height="120" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
+                <circle
+                  cx="60" cy="60" r={r}
+                  fill="none"
+                  stroke={approvalColor}
+                  strokeWidth="10"
+                  strokeLinecap="round"
+                  strokeDasharray={circ}
+                  strokeDashoffset={offset}
+                  transform="rotate(-90 60 60)"
+                  style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1), stroke 0.5s ease', filter: `drop-shadow(0 0 6px ${approvalColor})` }}
+                />
+              </svg>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: '1.7rem', fontWeight: 800, fontFamily: 'var(--font-display)', color: approvalColor, lineHeight: 1 }}>{approval}%</span>
+                <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '3px' }}>Approval</span>
+              </div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <span className="status-label" style={{ fontSize: '0.65rem' }}>Administration Approval Rating</span>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '8px', lineHeight: 1.5 }}>
+                {approval >= 65 ? '🟢 Strong mandate. Bonus PC and higher Congress support.' : approval <= 35 ? '🔴 Dangerously low. Risk of impeachment or coup.' : '🟡 Public sentiment is stable.'}
+              </p>
+              <div className="progress-bar-container" style={{ margin: '12px 0 0 0' }}>
+                <div className={`progress-bar-fill ${approval >= 60 ? 'fill-success' : approval <= 40 ? 'fill-danger' : 'fill-warning'}`} style={{ width: `${approval}%` }} />
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Grid of core metrics */}
       <div className="status-grid">
         {/* Economy GDP Card */}
-        <div className="glass-panel status-card">
+        <div className={`glass-panel status-card ${gdpGrowth >= 2 ? 'panel-glow-success' : gdpGrowth < 0 ? 'panel-glow-danger' : ''}`}>
           <span className="status-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <TrendingUp size={12} /> GDP Growth
           </span>
-          <div className="status-value">{gdpGrowth >= 0 ? '+' : ''}{gdpGrowth}%</div>
+          <div className="status-value" style={{ color: gdpGrowth >= 2 ? 'var(--color-success)' : gdpGrowth < 0 ? 'var(--color-danger)' : 'var(--text-main)' }}>
+            {gdpGrowth >= 0 ? '+' : ''}{gdpGrowth}%
+          </div>
           <div className={`status-trend ${gdpGrowth >= 2.0 ? 'trend-up' : 'trend-down'}`}>
             <span>GDP: ${gdp}T</span>
           </div>
         </div>
 
         {/* Debt & Deficit Card */}
-        <div className="glass-panel status-card">
+        <div className={`glass-panel status-card ${deficit > 1 ? 'panel-glow-danger' : deficit <= 0 ? 'panel-glow-success' : ''}`}>
           <span className="status-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <DollarSign size={12} /> National Debt
           </span>
@@ -243,22 +268,26 @@ export default function Dashboard({
         </div>
 
         {/* Security Index */}
-        <div className="glass-panel status-card">
+        <div className={`glass-panel status-card ${security >= 60 ? 'panel-glow-success' : security < 35 ? 'panel-glow-danger' : ''}`}>
           <span className="status-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Shield size={12} /> Security Index
           </span>
-          <div className="status-value">{security}%</div>
+          <div className="status-value" style={{ color: security >= 60 ? 'var(--color-success)' : security < 35 ? 'var(--color-danger)' : 'var(--text-main)' }}>
+            {security}%
+          </div>
           <div className="progress-bar-container" style={{ height: '4px', marginTop: '6px' }}>
             <div className={`progress-bar-fill ${security >= 60 ? 'fill-success' : security < 35 ? 'fill-danger' : 'fill-primary'}`} style={{ width: `${security}%` }} />
           </div>
         </div>
 
         {/* Welfare Index */}
-        <div className="glass-panel status-card">
+        <div className={`glass-panel status-card ${welfare >= 60 ? 'panel-glow-success' : welfare < 35 ? 'panel-glow-danger' : ''}`}>
           <span className="status-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Users size={12} /> Welfare Index
           </span>
-          <div className="status-value">{welfare}%</div>
+          <div className="status-value" style={{ color: welfare >= 60 ? 'var(--color-success)' : welfare < 35 ? 'var(--color-danger)' : 'var(--text-main)' }}>
+            {welfare}%
+          </div>
           <div className="progress-bar-container" style={{ height: '4px', marginTop: '6px' }}>
             <div className={`progress-bar-fill ${welfare >= 60 ? 'fill-success' : welfare < 35 ? 'fill-danger' : 'fill-primary'}`} style={{ width: `${welfare}%` }} />
           </div>

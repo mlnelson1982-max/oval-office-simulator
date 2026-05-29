@@ -2,12 +2,13 @@ import React, { useRef, useEffect, useState } from 'react';
 
 export default function InteractiveGlobe({ countries, selectedCountry, onSelectCountry }) {
   const canvasRef = useRef(null);
-  const [rotationX, setRotationX] = useState(0.4); // Pitch
-  const [rotationY, setRotationY] = useState(0.5); // Yaw
+  const rotationX = useRef(0.4); // Pitch
+  const rotationY = useRef(0.5); // Yaw
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const rotStart = useRef({ x: 0, y: 0 });
   const autoRotateRef = useRef(true);
+  const autoRotateTimeoutRef = useRef(null);
 
   const GLOBE_RADIUS = 50;
 
@@ -57,11 +58,10 @@ export default function InteractiveGlobe({ countries, selectedCountry, onSelectC
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Auto rotation drift if not user dragging
-      let currRotY = rotationY;
       if (autoRotateRef.current && !isDragging) {
-        currRotY += 0.003;
-        setRotationY(currRotY);
+        rotationY.current += 0.003;
       }
+      const currRotY = rotationY.current;
 
       // Draw background atmospheric glow
       const glowGrad = ctx.createRadialGradient(centerX, centerY, GLOBE_RADIUS - 10, centerX, centerY, GLOBE_RADIUS + 15);
@@ -90,7 +90,7 @@ export default function InteractiveGlobe({ countries, selectedCountry, onSelectC
 
         for (let lng = -180; lng <= 180; lng += 5) {
           const pt3d = latLngToCartesian(lat, lng, GLOBE_RADIUS);
-          const rotPt = rotatePoint(pt3d, rotationX, currRotY);
+          const rotPt = rotatePoint(pt3d, rotationX.current, currRotY);
 
           // Only draw points on the front hemisphere (z > 0)
           if (rotPt.z > 0) {
@@ -117,7 +117,7 @@ export default function InteractiveGlobe({ countries, selectedCountry, onSelectC
 
         for (let lat = -90; lat <= 90; lat += 5) {
           const pt3d = latLngToCartesian(lat, lng, GLOBE_RADIUS);
-          const rotPt = rotatePoint(pt3d, rotationX, currRotY);
+          const rotPt = rotatePoint(pt3d, rotationX.current, currRotY);
 
           if (rotPt.z > 0) {
             const sx = centerX + rotPt.x;
@@ -139,7 +139,7 @@ export default function InteractiveGlobe({ countries, selectedCountry, onSelectC
       // Render Country Nodes
       countries.forEach(c => {
         const pt3d = latLngToCartesian(c.lat, c.lng, GLOBE_RADIUS);
-        const rotPt = rotatePoint(pt3d, rotationX, currRotY);
+        const rotPt = rotatePoint(pt3d, rotationX.current, currRotY);
 
         if (rotPt.z > 0) {
           const sx = centerX + rotPt.x;
@@ -192,14 +192,17 @@ export default function InteractiveGlobe({ countries, selectedCountry, onSelectC
     return () => {
       cancelAnimationFrame(animId);
     };
-  }, [rotationX, rotationY, isDragging, countries, selectedCountry]);
+  }, [isDragging, countries, selectedCountry]);
 
   // Drag interaction math handlers
   const handleStart = (clientX, clientY) => {
     setIsDragging(true);
     autoRotateRef.current = false;
+    if (autoRotateTimeoutRef.current) {
+      clearTimeout(autoRotateTimeoutRef.current);
+    }
     dragStart.current = { x: clientX, y: clientY };
-    rotStart.current = { x: rotationX, y: rotationY };
+    rotStart.current = { x: rotationX.current, y: rotationY.current };
   };
 
   const handleMove = (clientX, clientY) => {
@@ -210,15 +213,18 @@ export default function InteractiveGlobe({ countries, selectedCountry, onSelectC
 
     // Adjust sensitivity scaling
     const sensitivity = 0.007;
-    setRotationY(rotStart.current.y + dx * sensitivity);
-    setRotationX(Math.max(-Math.PI/3, Math.min(Math.PI/3, rotStart.current.x + dy * sensitivity)));
+    rotationY.current = rotStart.current.y + dx * sensitivity;
+    rotationX.current = Math.max(-Math.PI/3, Math.min(Math.PI/3, rotStart.current.x + dy * sensitivity));
   };
 
   const handleEnd = () => {
     setIsDragging(false);
+    if (autoRotateTimeoutRef.current) {
+      clearTimeout(autoRotateTimeoutRef.current);
+    }
     // Restart auto rotate after 4 seconds of inactivity
-    setTimeout(() => {
-      if (!isDragging) autoRotateRef.current = true;
+    autoRotateTimeoutRef.current = setTimeout(() => {
+      autoRotateRef.current = true;
     }, 4000);
   };
 

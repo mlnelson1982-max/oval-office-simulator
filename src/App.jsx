@@ -110,6 +110,7 @@ export default function App() {
             proposeBillToCongress={proposeBillToCongress}
             setPolicies={setPolicies}
             factions={factions}
+            turn={turn}
           />
         );
       case 'congress':
