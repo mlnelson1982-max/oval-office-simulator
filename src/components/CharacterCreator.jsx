@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import AvatarSvg from './AvatarSvg';
-import { Palette, Sparkles, Shirt, Shield, Eye, HelpCircle } from 'lucide-react';
+import { Palette, Sparkles, Shirt, Shield, Eye, HelpCircle, Image, Key, Loader2 } from 'lucide-react';
 
 const CREATOR_OPTIONS = {
   skin: [
@@ -47,13 +47,120 @@ export default function CharacterCreator({ onSave }) {
     color: 'black',
     attire: 'suit',
     accessory: 'none',
-    background: 'ovalOffice'
+    background: 'ovalOffice',
+    aiPortrait: null
   });
+
+  const [apiKey, setApiKey] = useState(() => {
+    return localStorage.getItem('gemini_api_key') || import.meta.env.VITE_GEMINI_API_KEY || '';
+  });
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState(null);
+
+  const buildPortraitPrompt = (sel) => {
+    const skinText = {
+      peach: 'fair peach skin tone',
+      tan: 'warm tan skin tone',
+      bronze: 'deep bronze skin tone',
+      brown: 'rich brown skin tone'
+    }[sel.skin] || 'natural skin tone';
+
+    const hairText = {
+      crop: 'short cropped hair style',
+      slicked: 'slicked-back combed hair style',
+      bob: 'bob cut hair style',
+      waves: 'flowing wavy hair style',
+      curly: 'short curly hair style'
+    }[sel.hair] || 'neat hair';
+
+    const colorText = sel.color + ' hair color';
+
+    const attireText = {
+      suit: 'a dark executive suit with a blue tie and white collared shirt',
+      blazer: 'a classic green academic blazer with a white shirt',
+      turtleneck: 'a modern black turtleneck sweater'
+    }[sel.attire] || 'professional attire';
+
+    const accessoryText = {
+      none: '',
+      glasses: 'wearing classic black-framed reading glasses',
+      pin: 'wearing a small American flag pin on the lapel'
+    }[sel.accessory] || '';
+
+    const bgText = {
+      ovalOffice: 'inside the historic White House Oval Office, with mahogany wood paneling and elegant blue drapery curtains with gold trim in the background',
+      pressRoom: 'standing at a dark wood podium with the official White House press briefing seal visible in the background',
+      roseGarden: 'standing outside in the White House Rose Garden, with lush green foliage, blooming roses, and classic white columns in the soft-focus background'
+    }[sel.background] || 'inside the White House';
+
+    return `A highly professional, realistic, cinematic official photographic portrait of the President of the United States. The president has a ${skinText}, ${hairText} of ${colorText}, and is ${accessoryText ? accessoryText + ' and ' : ''}wearing ${attireText}. Setting is ${bgText}. Studio lighting, professional presidential portrait photography, award-winning, highly detailed, photorealistic, 8k resolution.`;
+  };
+
+  const handleGenerateAI = async () => {
+    if (!apiKey.trim()) {
+      setGenerationError('Please enter a valid Gemini API Key.');
+      return;
+    }
+    
+    setIsGenerating(true);
+    setGenerationError(null);
+    
+    const prompt = buildPortraitPrompt(selections);
+    
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey.trim()}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            instances: [
+              {
+                prompt: prompt
+              }
+            ],
+            parameters: {
+              sampleCount: 1,
+              aspectRatio: '1:1',
+              outputMimeType: 'image/jpeg',
+              personGeneration: 'ALLOW_ADULT'
+            }
+          })
+        }
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `HTTP error! Status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const base64Data = data.predictions?.[0]?.bytesBase64Encoded;
+      
+      if (!base64Data) {
+        throw new Error('No image predictions returned from Gemini API.');
+      }
+      
+      const imageUrl = `data:image/jpeg;base64,${base64Data}`;
+      setSelections(prev => ({
+        ...prev,
+        aiPortrait: imageUrl
+      }));
+    } catch (err) {
+      console.error(err);
+      setGenerationError(err.message || 'Failed to generate AI portrait.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleSelect = (category, id) => {
     setSelections(prev => ({
       ...prev,
-      [category]: id
+      [category]: id,
+      aiPortrait: null // Reset AI portrait since traits changed
     }));
   };
 
@@ -90,13 +197,34 @@ export default function CharacterCreator({ onSave }) {
             overflow: 'hidden',
             border: '2px solid rgba(212,168,67,0.4)',
             boxShadow: '0 0 30px rgba(212,168,67,0.15), 0 8px 24px rgba(0,0,0,0.6)',
+            position: 'relative'
           }}>
-            <AvatarSvg avatar={selections} />
+            {selections.aiPortrait ? (
+              <img src={selections.aiPortrait} alt="AI Portrait" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <AvatarSvg avatar={selections} />
+            )}
+            
+            {/* Overlay generating status */}
+            {isGenerating && (
+              <div style={{
+                position: 'absolute', inset: 0,
+                background: 'rgba(0,0,0,0.85)',
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                gap: '8px', zIndex: 10
+              }}>
+                <Loader2 size={24} style={{ color: 'var(--color-primary)', animation: 'spin 1.5s linear infinite' }} />
+                <span style={{ fontSize: '0.55rem', fontFamily: 'monospace', color: 'var(--color-primary)', letterSpacing: '0.1em' }}>
+                  CALLING NANO BANANA...
+                </span>
+              </div>
+            )}
           </div>
         </div>
         <div style={{ marginTop: '14px', textAlign: 'center' }}>
           <div style={{ fontSize: '0.6rem', fontFamily: 'monospace', color: 'rgba(212,168,67,0.7)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-            OFFICIAL ADMINISTRATION PORTRAIT
+            {selections.aiPortrait ? 'AI GENERATED PORTRAIT' : 'OFFICIAL VECTOR PORTRAIT'}
           </div>
           <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginTop: '2px', letterSpacing: '0.08em' }}>
             {CREATOR_OPTIONS.background.find(b => b.id === selections.background)?.icon} {CREATOR_OPTIONS.background.find(b => b.id === selections.background)?.label}
@@ -249,6 +377,77 @@ export default function CharacterCreator({ onSave }) {
           </div>
         </div>
 
+      </div>
+
+      {/* AI GENERATION CONTROLS */}
+      <div className="glass-panel" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid rgba(212, 175, 55, 0.25)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="status-label" style={{ color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.65rem' }}>
+            <Sparkles size={12} /> NANO BANANA AI ENGINE (IMAGEN 3)
+          </span>
+          <span style={{ fontSize: '0.55rem', fontFamily: 'monospace', color: 'rgba(212,175,55,0.5)' }}>
+            REALISTIC PORTRAIT MOD
+          </span>
+        </div>
+
+        {/* API Key Entry */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <label style={{ fontSize: '0.6rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Key size={10} /> ENTER GEMINI API KEY
+          </label>
+          <input
+            type="password"
+            value={apiKey}
+            onChange={(e) => {
+              setApiKey(e.target.value);
+              localStorage.setItem('gemini_api_key', e.target.value);
+            }}
+            placeholder="AI Studio API Key (AI_KEY)..."
+            style={{
+              width: '100%',
+              background: 'rgba(0,0,0,0.3)',
+              border: '1px solid var(--border-glass)',
+              borderRadius: '4px',
+              padding: '10px 12px',
+              color: 'white',
+              fontFamily: 'monospace',
+              fontSize: '0.8rem',
+              outline: 'none'
+            }}
+          />
+          <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>
+            Get a free key from <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>Google AI Studio</a>. Saved locally.
+          </span>
+        </div>
+
+        {/* Generate Button */}
+        <button
+          onClick={handleGenerateAI}
+          disabled={isGenerating || !apiKey.trim()}
+          className="btn btn-secondary"
+          style={{
+            width: '100%', padding: '12px',
+            border: '1px solid rgba(212, 175, 55, 0.3)',
+            color: apiKey.trim() ? 'var(--color-primary)' : 'var(--text-muted)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '0.8rem', fontWeight: 700, gap: '8px'
+          }}
+        >
+          <Image size={14} />
+          <span>{isGenerating ? 'GENERATING REAL PORTRAIT...' : selections.aiPortrait ? 'REGENERATE AI PORTRAIT' : 'GENERATE AI REAL PORTRAIT'}</span>
+        </button>
+
+        {generationError && (
+          <div style={{ color: 'var(--color-danger)', fontSize: '0.7rem', padding: '8px', background: 'rgba(244,63,94,0.05)', border: '1px solid rgba(244,63,94,0.2)', borderRadius: '4px', lineHeight: 1.4 }}>
+            Error: {generationError}
+          </div>
+        )}
+
+        {selections.aiPortrait && (
+          <div style={{ fontSize: '0.65rem', color: 'var(--color-success)', background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)', padding: '8px', borderRadius: '4px', textAlign: 'center' }}>
+            ✓ Realistic portrait generated! Tap "Confirm Appearance" to set this as your official dossier photo.
+          </div>
+        )}
       </div>
 
       {/* Save Button */}

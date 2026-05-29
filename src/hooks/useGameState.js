@@ -181,7 +181,8 @@ export function useGameState() {
     color: 'black',
     attire: 'suit',
     accessory: 'none',
-    background: 'ovalOffice'
+    background: 'ovalOffice',
+    aiPortrait: null
   });
 
   const [treasurySec, setTreasurySec] = useState(null);
@@ -965,7 +966,8 @@ export function useGameState() {
       color: 'black',
       attire: 'suit',
       accessory: 'none',
-      background: 'ovalOffice'
+      background: 'ovalOffice',
+      aiPortrait: null
     });
     setTreasurySec(null);
     setStateSec(null);

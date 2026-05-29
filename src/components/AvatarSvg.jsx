@@ -22,8 +22,25 @@ export default function AvatarSvg({ avatar }) {
     color = 'black',
     attire = 'suit',
     accessory = 'none',
-    background = 'ovalOffice'
+    background = 'ovalOffice',
+    aiPortrait = null
   } = avatar || {};
+
+  if (aiPortrait) {
+    return (
+      <img
+        src={aiPortrait}
+        alt="President Portrait"
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          borderRadius: 'inherit',
+          display: 'block'
+        }}
+      />
+    );
+  }
 
   const skinColor = SKIN_TONES[skin] || SKIN_TONES.peach;
   const hairColor = HAIR_COLORS[color] || HAIR_COLORS.black;
